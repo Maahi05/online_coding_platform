@@ -19,15 +19,34 @@ class StudentRegistrationForm(forms.ModelForm):
         fields = ['roll_number', 'college', 'branch', 'phone']
 
     def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("Username is already taken.")
+        username = self.cleaned_data.get('username', '').strip()
+        if not username:
+            raise forms.ValidationError("Username is required.")
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("Username is already taken. Please choose another username.")
         return username
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if not email:
+            raise forms.ValidationError("Email address is required.")
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("This email address is already registered.")
+        return email
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '').strip()
+        if phone:
+            if Student.objects.filter(phone=phone).exists():
+                raise forms.ValidationError("This phone number is already registered.")
+        return phone
+
     def clean_roll_number(self):
-        roll = self.cleaned_data.get('roll_number')
-        if Student.objects.filter(roll_number=roll).exists():
-            raise forms.ValidationError("Roll number already registered.")
+        roll = self.cleaned_data.get('roll_number', '').strip()
+        if not roll:
+            raise forms.ValidationError("Roll number is required.")
+        if Student.objects.filter(roll_number__iexact=roll).exists():
+            raise forms.ValidationError("This roll number is already registered.")
         return roll
 
     def clean(self):
@@ -36,6 +55,14 @@ class StudentRegistrationForm(forms.ModelForm):
         p2 = cleaned_data.get("confirm_password")
         if p1 and p2 and p1 != p2:
             self.add_error('confirm_password', "Passwords do not match.")
+
+        first_name = cleaned_data.get("first_name", "").strip()
+        last_name = cleaned_data.get("last_name", "").strip()
+        if first_name and last_name:
+            if User.objects.filter(first_name__iexact=first_name, last_name__iexact=last_name).exists():
+                self.add_error('first_name', "A student with this First and Last name is already registered.")
+                self.add_error('last_name', "Duplicate student name detected.")
+
         return cleaned_data
 
 
@@ -83,6 +110,12 @@ class MCQQuestionForm(forms.ModelForm):
 
 
 class CodingQuestionForm(forms.ModelForm):
+    starter_code = forms.CharField(
+        required=False,
+        initial="def solution(a):\n    # 'a' contains the input values\n    # Write your solution below and return the result\n    pass\n",
+        widget=forms.Textarea(attrs={'class': 'form-control font-monospace', 'rows': 5, 'placeholder': 'def solution(a):\n    pass'})
+    )
+
     # Sample Test Case
     sample_input = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control font-monospace', 'rows': 2, 'placeholder': 'Sample Standard Input (e.g. 5\n1 2 3 4 5)'}))
     sample_expected_output = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control font-monospace', 'rows': 2, 'placeholder': 'Sample Expected Output (e.g. 15)'}))

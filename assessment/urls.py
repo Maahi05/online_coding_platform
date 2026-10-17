@@ -20,6 +20,7 @@ urlpatterns = [
     # AJAX Endpoints for Timed Exam
     path('api/save-answer/', views.api_save_answer, name='api_save_answer'),
     path('api/run-code/', views.api_run_code, name='api_run_code'),
+    path('api/record-tab-switch/', views.api_record_tab_switch, name='api_record_tab_switch'),
 
     # Leaderboard
     path('leaderboard/', views.leaderboard, name='leaderboard'),

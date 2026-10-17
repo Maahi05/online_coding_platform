@@ -75,6 +75,108 @@ def validate_python_code(code_str: str) -> List[str]:
     return validator.errors
 
 
+LEETCODE_HARNESS = r'''
+# --- LEETCODE STYLE AUTO-INVOCATION HARNESS ---
+if __name__ == '__main__':
+    import sys, ast
+
+    _target = None
+    for _name in ['solution', 'solve']:
+        if _name in globals() and callable(globals()[_name]):
+            _target = globals()[_name]
+            break
+
+    if _target is None and 'Solution' in globals() and isinstance(globals()['Solution'], type):
+        try:
+            _inst = globals()['Solution']()
+            for _mname in ['solution', 'solve']:
+                if hasattr(_inst, _mname) and callable(getattr(_inst, _mname)):
+                    _target = getattr(_inst, _mname)
+                    break
+        except Exception:
+            pass
+
+    if _target is not None:
+        _raw = sys.stdin.read().strip()
+        if _raw:
+            _arg_count = getattr(_target, '__code__', None).co_argcount if hasattr(_target, '__code__') else 1
+
+            _called = False
+            _ret = None
+
+            # Attempt 1: Check for literal Python / JSON structure (e.g. [10, 25, 7, 40, 15] or {"a": 1})
+            if (_raw.startswith('[') and _raw.endswith(']')) or (_raw.startswith('{') and _raw.endswith('}')):
+                try:
+                    _parsed = ast.literal_eval(_raw)
+                    if _arg_count == 1:
+                        _ret = _target(_parsed)
+                        _called = True
+                    elif isinstance(_parsed, (list, tuple)) and len(_parsed) == _arg_count:
+                        _ret = _target(*_parsed)
+                        _called = True
+                except Exception:
+                    pass
+
+            # Attempt 2: Whitespace-separated tokens (standard competitive programming & LeetCode array input)
+            if not _called:
+                _tokens = _raw.split()
+                try:
+                    _ints = [int(_t) for _t in _tokens]
+                    if _arg_count == 1:
+                        if len(_ints) > 1 and _ints[0] == len(_ints) - 1:
+                            # e.g. '5\n10 25 7 40 15' -> passes a = [10, 25, 7, 40, 15]
+                            _val = _ints[1:]
+                        elif len(_ints) > 1:
+                            # e.g. '10 25 7 40 15' -> passes a = [10, 25, 7, 40, 15]
+                            _val = _ints
+                        elif len(_ints) == 1:
+                            _val = _ints[0]
+                        else:
+                            _val = _ints
+                        try:
+                            _ret = _target(_val)
+                            _called = True
+                        except TypeError as _te:
+                            if 'not iterable' in str(_te) and isinstance(_val, (int, float)):
+                                _ret = _target([_val])
+                                _called = True
+                            else:
+                                raise
+                    elif _arg_count == len(_ints):
+                        _ret = _target(*_ints)
+                        _called = True
+                    else:
+                        _ret = _target(_ints)
+                        _called = True
+                except ValueError:
+                    # Non-numeric input (e.g. "Python is awesome")
+                    _lines = _raw.splitlines()
+                    if _arg_count == 1:
+                        if len(_lines) == 1:
+                            _ret = _target(_raw)
+                        else:
+                            _ret = _target(_lines)
+                        _called = True
+                    elif _arg_count == len(_lines):
+                        _ret = _target(*_lines)
+                        _called = True
+                    elif _arg_count == len(_tokens):
+                        _ret = _target(*_tokens)
+                        _called = True
+                    else:
+                        _ret = _target(_raw)
+                        _called = True
+
+            if _ret is not None:
+                if isinstance(_ret, (list, tuple)):
+                    print(" ".join(str(_x) for _x in _ret))
+                elif isinstance(_ret, bool):
+                    print(str(_ret))
+                else:
+                    print(_ret)
+'''
+
+
 def execute_test_case(code_str: str, input_data: str, expected_output: str, timeout_seconds: float = 3.0) -> Dict[str, Any]:
     """
     Executes Python code against single input/output pair inside an isolated subprocess.
@@ -93,8 +195,15 @@ def execute_test_case(code_str: str, input_data: str, expected_output: str, time
     # 2. Run inside temporary sandbox directory
     with tempfile.TemporaryDirectory() as sandbox_dir:
         script_path = os.path.join(sandbox_dir, 'solution.py')
+        
+        # Prepare script with auto-invocation harness if function style is used
+        run_code = code_str
+        import re
+        if re.search(r'def\s+(solution|solve)\s*\(', code_str) or re.search(r'class\s+Solution\b', code_str):
+            run_code += "\n\n" + LEETCODE_HARNESS
+
         with open(script_path, 'w', encoding='utf-8') as f:
-            f.write(code_str)
+            f.write(run_code)
 
         try:
             # -I: Run in isolated mode (disables current dir on sys.path, user site-packages, PYTHON* env vars)

@@ -30,7 +30,11 @@ class Test(models.Model):
     description = models.TextField(blank=True)
     duration_minutes = models.PositiveIntegerField(default=30, help_text="Duration in minutes")
     total_marks = models.PositiveIntegerField(default=100)
-    pass_marks = models.PositiveIntegerField(default=40)
+    pass_marks = models.PositiveIntegerField(default=75, help_text="Passing percentage (always 75%)")
+
+    @property
+    def pass_percentage(self):
+        return 75.0
     has_negative_marking = models.BooleanField(default=False)
     negative_marks_per_question = models.FloatField(default=0.25, help_text="Marks deducted per wrong MCQ answer")
     randomize_questions = models.BooleanField(default=True, help_text="Randomize question sequence for each student")
@@ -63,6 +67,20 @@ class Test(models.Model):
         agg = self.questions.aggregate(models.Sum('marks'))['marks__sum']
         return agg if agg is not None else 0
 
+    @property
+    def status_label(self):
+        completed_count = self.attempts.filter(status__in=['COMPLETED', 'TIMED_OUT']).count()
+        in_progress_count = self.attempts.filter(status='IN_PROGRESS').count()
+
+        if completed_count > 0 and in_progress_count == 0:
+            return 'Completed'
+        elif in_progress_count > 0:
+            return 'In Progress'
+        elif self.is_active:
+            return 'Active'
+        else:
+            return 'Draft'
+
 
 class Question(models.Model):
     QUESTION_TYPES = (
@@ -76,7 +94,7 @@ class Question(models.Model):
     order = models.PositiveIntegerField(default=1)
 
     # Coding specific fields
-    starter_code = models.TextField(blank=True, default='# Write your Python solution here\n')
+    starter_code = models.TextField(blank=True, default="def solution(a):\n    # 'a' contains the input values\n    # Write your solution below and return the result\n    pass\n")
     problem_constraints = models.TextField(blank=True, default='')
     explanation = models.TextField(blank=True, default='')
 
@@ -122,6 +140,7 @@ class TestAttempt(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='IN_PROGRESS')
     time_taken_seconds = models.PositiveIntegerField(default=0)
     question_order = models.JSONField(default=list, blank=True, help_text="Assigned randomized question IDs")
+    tab_switch_count = models.PositiveIntegerField(default=0, help_text="Number of tab switches detected during exam")
 
     class Meta:
         ordering = ['-score', 'time_taken_seconds', 'completed_at']
@@ -131,7 +150,18 @@ class TestAttempt(models.Model):
 
     @property
     def is_passed(self):
-        return self.score >= self.test.pass_marks
+        # Passing will always be 75%
+        return round(float(self.percentage or 0.0), 2) >= 75.0
+
+    @property
+    def is_inactive(self):
+        # Once time is completed or attempt is completed/timed out, it is inactive
+        if self.status in ['COMPLETED', 'TIMED_OUT']:
+            return True
+        from django.utils import timezone
+        from datetime import timedelta
+        end_time = self.started_at + timedelta(minutes=self.test.duration_minutes)
+        return timezone.now() >= end_time
 
     @property
     def formatted_time_taken(self):

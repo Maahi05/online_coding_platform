@@ -41,7 +41,7 @@ def generate_certificate_pdf(attempt) -> bytes:
     pdf.set_xy(20, 24)
     pdf.set_font("Helvetica", "B", 14)
     pdf.set_text_color(100, 116, 139)
-    pdf.cell(257, 8, "10000 CODERS ASSESSMENT PORTAL", 0, 1, "C")
+    pdf.cell(257, 8, "ONLINE CODING ASSESSMENT PORTAL", 0, 1, "C")
 
     # Certificate Title
     pdf.set_font("Helvetica", "B", 28)

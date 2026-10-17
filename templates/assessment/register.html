@@ -66,6 +66,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Phone Number</label>
                             {{ form.phone }}
+                            {% if form.phone.errors %}<div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-semibold">College / University Name</label>

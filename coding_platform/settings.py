@@ -13,6 +13,14 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+
+CSRF_COOKIE_NAME = 'pyassess_csrftoken'
+SESSION_COOKIE_NAME = 'pyassess_sessionid'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

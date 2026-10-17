@@ -15,6 +15,7 @@
                         Student: <strong>{{ attempt.student.user.get_full_name|default:attempt.student.user.username }}</strong>
                         &bull; Roll Number: <strong>{{ attempt.student.roll_number }}</strong>
                         &bull; Completed: {{ attempt.completed_at|date:"M d, Y H:i" }}
+                        &bull; <span class="badge bg-secondary text-white"><i class="fa-solid fa-lock me-1"></i> Inactive (Time Completed)</span>
                     </p>
                 </div>
                 <div class="mt-3 mt-md-0 d-flex gap-2">
@@ -45,7 +46,7 @@
                     </div>
                     <div class="col-md-3 col-6">
                         <div class="p-3 bg-white rounded border">
-                            <span class="text-muted small fw-semibold text-uppercase">Outcome</span>
+                            <span class="text-muted small fw-semibold text-uppercase">Outcome (Pass: 75%)</span>
                             <div class="mt-1">
                                 {% if attempt.is_passed %}
                                     <span class="badge bg-success fs-6 px-3 py-2"><i class="fa-solid fa-circle-check me-1"></i> PASSED</span>

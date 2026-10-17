@@ -78,9 +78,15 @@ def student_login(request):
         return redirect('student_dashboard')
 
     if request.method == 'POST':
-        u = request.POST.get('username')
+        u = request.POST.get('username', '').strip()
         p = request.POST.get('password')
         user = authenticate(request, username=u, password=p)
+        if user is None:
+            # Check if student entered their roll number instead of username
+            student = Student.objects.filter(roll_number__iexact=u).first()
+            if student:
+                user = authenticate(request, username=student.user.username, password=p)
+
         if user is not None:
             login(request, user)
             messages.success(request, f"Welcome back, {user.first_name or user.username}!")
@@ -88,7 +94,7 @@ def student_login(request):
                 return redirect('admin_dashboard')
             return redirect('student_dashboard')
         else:
-            messages.error(request, "Invalid username or password.")
+            messages.error(request, "Invalid username/roll number or password.")
 
     return render(request, 'assessment/login.html')
 
@@ -129,6 +135,16 @@ def student_dashboard(request):
     
     # Active tests available
     available_tests = Test.objects.filter(is_active=True).order_by('-created_at')
+
+    # Automatically finalize any attempts where time has completed
+    now = timezone.now()
+    for att in student.attempts.filter(status='IN_PROGRESS'):
+        duration_delta = timedelta(minutes=att.test.duration_minutes)
+        if now >= att.started_at + duration_delta:
+            att.completed_at = att.started_at + duration_delta
+            att.time_taken_seconds = int(duration_delta.total_seconds())
+            att.status = 'TIMED_OUT'
+            att.save(update_fields=['completed_at', 'time_taken_seconds', 'status'])
     
     # Completed attempts
     attempts = student.attempts.all().order_by('-started_at')
@@ -178,7 +194,12 @@ def start_test(request, test_id):
 
     # Resume active attempt or create a new one
     active_attempt = TestAttempt.objects.filter(student=student, test=test, status='IN_PROGRESS').first()
-    if not active_attempt:
+    if active_attempt:
+        duration_delta = timedelta(minutes=test.duration_minutes)
+        if timezone.now() >= active_attempt.started_at + duration_delta:
+            messages.info(request, f"The time for '{test.title}' has completed and this test is now inactive.")
+            return redirect('submit_test', attempt_id=active_attempt.id)
+    else:
         # Determine question order (Randomized if enabled)
         question_ids = list(test.questions.values_list('id', flat=True))
         if test.randomize_questions:
@@ -249,6 +270,21 @@ def take_test(request, attempt_id):
                 q_data['answered'] = True
                 q_data['selected_option'] = sub.selected_option_id
         else:
+            # Clean starter stub (LeetCode style) - ensure NO pre-solved code is given away!
+            clean_stub = "def solution(a):\n    # 'a' contains the input values\n    # Write your solution below and return the result\n    pass\n"
+            
+            # If the question in database has the old solution or boilerplate, replace it with clean stub
+            if (not q.starter_code or 
+                "print(sum(nums))" in q.starter_code or 
+                "reversed(words)" in q.starter_code or 
+                "def solution():" in q.starter_code or 
+                "def solve():" in q.starter_code or 
+                "__main__" in q.starter_code):
+                q.starter_code = clean_stub
+                q.save(update_fields=['starter_code'])
+
+            q_data['starter_code'] = q.starter_code
+
             sample_tc = q.test_cases.filter(is_sample=True).first()
             if sample_tc:
                 q_data['sample_test_case'] = {
@@ -256,15 +292,30 @@ def take_test(request, attempt_id):
                     'output': sample_tc.expected_output
                 }
             if sub and sub.submitted_code:
-                q_data['answered'] = True
+                # If current submission has the old pre-filled answer or old template without (a), reset it
+                sub_code = sub.submitted_code.replace('\r\n', '\n')
+                if ("print(sum(nums))" in sub_code or 
+                    "reversed(words)" in sub_code or 
+                    "def solution():" in sub_code or
+                    "def solve():" in sub_code or
+                    "__main__" in sub_code or
+                    sub_code.strip() == clean_stub.strip()):
+                    sub.submitted_code = clean_stub
+                    sub.save(update_fields=['submitted_code'])
+                q_data['answered'] = (sub.submitted_code.strip() != clean_stub.strip() and len(sub.submitted_code.strip()) > 0)
                 q_data['submitted_code'] = sub.submitted_code
 
         questions_payload.append(q_data)
+
+    if attempt.tab_switch_count >= 4:
+        messages.warning(request, "Exam auto-submitted due to exceeding 4 tab switches.")
+        return redirect('submit_test', attempt_id=attempt.id)
 
     return render(request, 'assessment/take_test.html', {
         'attempt': attempt,
         'test': attempt.test,
         'seconds_remaining': seconds_remaining,
+        'tab_switch_count': attempt.tab_switch_count,
         'questions_payload_json': json.dumps(questions_payload),
     })
 
@@ -324,9 +375,32 @@ def api_run_code(request):
         results = []
         for tc in sample_test_cases:
             res = execute_test_case(code, tc.input_data, tc.expected_output)
+            res['input_data'] = tc.input_data
             results.append(res)
 
         return JsonResponse({'results': results})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+def api_record_tab_switch(request):
+    """Endpoint to record tab switch events during exam proctoring (max 4 attempts)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=400)
+    try:
+        data = json.loads(request.body)
+        attempt_id = data.get('attempt_id')
+        attempt = get_object_or_404(TestAttempt, id=attempt_id, student__user=request.user, status='IN_PROGRESS')
+        attempt.tab_switch_count += 1
+        attempt.save(update_fields=['tab_switch_count'])
+        auto_submit = (attempt.tab_switch_count >= 4)
+        return JsonResponse({
+            'status': 'ok',
+            'tab_switch_count': attempt.tab_switch_count,
+            'remaining': max(0, 4 - attempt.tab_switch_count),
+            'auto_submit': auto_submit
+        })
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -395,8 +469,8 @@ def submit_test(request, attempt_id):
     attempt.percentage = round((attempt.score / calcd_total) * 100, 2)
     attempt.save()
 
-    # Generate Certificate if passed with excellence (>= 60% or top score)
-    if attempt.percentage >= 60.0:
+    # Generate Certificate if passed (>= 75.0%)
+    if attempt.percentage >= 75.0:
         Certificate.objects.get_or_create(attempt=attempt)
 
     messages.success(request, f"Test submitted successfully! You scored {attempt.score}/{attempt.total_marks} ({attempt.percentage}%).")

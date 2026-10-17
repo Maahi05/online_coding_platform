@@ -32,10 +32,10 @@ def seed():
 
     # 2. Sample Students
     students_data = [
-        {'username': 'rahul', 'first': 'Rahul', 'last': 'Sharma', 'roll': '23N31A0501', 'college': 'JNTU Hyderabad', 'branch': 'CSE', 'email': 'rahul@example.com'},
-        {'username': 'priya', 'first': 'Priya', 'last': 'Reddy', 'roll': '23N31A0502', 'college': 'CBIT Hyderabad', 'branch': 'IT', 'email': 'priya@example.com'},
-        {'username': 'sai', 'first': 'Sai', 'last': 'Kumar', 'roll': '23N31A0503', 'college': 'VNR VJIET', 'branch': 'CSE', 'email': 'sai@example.com'},
-        {'username': 'ananya', 'first': 'Ananya', 'last': 'Verma', 'roll': '23N31A0504', 'college': 'Vasavi College', 'branch': 'ECE', 'email': 'ananya@example.com'},
+        {'username': 'rahul', 'first': 'Rahul', 'last': 'Sharma', 'roll': 'DEMO_0501', 'college': 'JNTU Hyderabad', 'branch': 'CSE', 'email': 'rahul@example.com'},
+        {'username': 'priya', 'first': 'Priya', 'last': 'Reddy', 'roll': 'DEMO_0502', 'college': 'CBIT Hyderabad', 'branch': 'IT', 'email': 'priya@example.com'},
+        {'username': 'sai', 'first': 'Sai', 'last': 'Kumar', 'roll': 'DEMO_0503', 'college': 'VNR VJIET', 'branch': 'CSE', 'email': 'sai@example.com'},
+        {'username': 'ananya', 'first': 'Ananya', 'last': 'Verma', 'roll': 'DEMO_0504', 'college': 'Vasavi College', 'branch': 'ECE', 'email': 'ananya@example.com'},
     ]
 
     student_objects = []
@@ -129,7 +129,7 @@ def seed():
         marks=15,
         order=4,
         problem_constraints="1 <= N <= 10^5, -10^6 <= arr[i] <= 10^6, Time Limit: 2.0s",
-        starter_code="import sys\n\ndef main():\n    lines = sys.stdin.read().split()\n    if not lines:\n        return\n    n = int(lines[0])\n    nums = [int(x) for x in lines[1:n+1]]\n    # Write logic to compute and print sum\n    print(sum(nums))\n\nif __name__ == '__main__':\n    main()\n",
+        starter_code="import sys\n\ndef solve():\n    # Read input from standard input\n    # Write your solution here\n    pass\n\nif __name__ == '__main__':\n    solve()\n",
         explanation="Read tokens from standard input, parse numbers into a list, and compute sum using sum() or an accumulator."
     )
     # Sample Test Case
@@ -161,7 +161,7 @@ def seed():
         marks=20,
         order=5,
         problem_constraints="String length <= 1000 characters, Time Limit: 2.0s",
-        starter_code="import sys\n\ndef main():\n    text = sys.stdin.read().strip()\n    # Reverse words and print\n    words = text.split()\n    print(' '.join(reversed(words)))\n\nif __name__ == '__main__':\n    main()\n",
+        starter_code="import sys\n\ndef solve():\n    # Read input from standard input\n    # Write your solution here\n    pass\n\nif __name__ == '__main__':\n    solve()\n",
         explanation="Use text.split() to split on spaces, reverse the sequence, and rejoin with ' '.join()."
     )
     # Sample Test Case

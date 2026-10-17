@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Coding Question - {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white py-3">
+                <h4 class="mb-0 fw-bold"><i class="fa-solid fa-code me-2"></i> Add Python Coding Question</h4>
+                <p class="mb-0 text-white-50 small">Target Assessment: <strong>{{ test.title }}</strong></p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Problem Title & Description *</label>
+                        {{ form.question_text }}
+                        {% if form.question_text.errors %}<div class="text-danger small mt-1">{{ form.question_text.errors.0 }}</div>{% endif %}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Marks *</label>
+                            {{ form.marks }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Order / Sequence</label>
+                            {{ form.order }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Problem Constraints</label>
+                        {{ form.problem_constraints }}
+                        <small class="text-muted">e.g. 1 &le; N &le; 10^5, Time Limit: 2.0s</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Starter Code Template</label>
+                        {{ form.starter_code }}
+                        <small class="text-muted">Pre-filled boilerplate presented to students in the editor.</small>
+                    </div>
+
+                    <h6 class="text-uppercase text-muted fw-bold mb-3 small border-bottom pb-2">
+                        <i class="fa-solid fa-vial text-primary me-1"></i> Test Cases Specification
+                    </h6>
+
+                    <!-- Sample Test Case -->
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <span class="badge bg-primary w-auto d-inline-block align-self-start mb-2">Sample Test Case (Visible to Student)</span>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Sample Input (stdin)</label>
+                                {{ form.sample_input }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Sample Expected Output (stdout) *</label>
+                                {{ form.sample_expected_output }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Test Case 1 -->
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <span class="badge bg-secondary w-auto d-inline-block align-self-start mb-2">Hidden Test Case 1 (Evaluation Only)</span>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Hidden Input 1 (stdin)</label>
+                                {{ form.hidden_input_1 }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Expected Output 1 (stdout) *</label>
+                                {{ form.hidden_output_1 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Test Case 2 -->
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <span class="badge bg-secondary w-auto d-inline-block align-self-start mb-2">Hidden Test Case 2 (Optional)</span>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Hidden Input 2 (stdin)</label>
+                                {{ form.hidden_input_2 }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Expected Output 2 (stdout)</label>
+                                {{ form.hidden_output_2 }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Editorial / Solution Explanation</label>
+                        {{ form.explanation }}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'admin_manage_questions' test.id %}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success px-4 fw-semibold">
+                            <i class="fa-solid fa-check me-1"></i> Save Coding Question
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

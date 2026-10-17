@@ -1,0 +1,621 @@
+{% extends 'base.html' %}
+
+{% block title %}Exam: {{ test.title }} - PyAssessPro{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Exam full-screen focused layout */
+    .exam-header {
+        background: #0f172a;
+        color: white;
+        border-radius: 12px;
+        padding: 16px 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .timer-badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        padding: 6px 16px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .timer-warning {
+        animation: pulse 1s infinite alternate;
+        background: rgba(239, 68, 68, 0.35);
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.05); }
+    }
+    .question-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease-in-out;
+    }
+    .question-btn.current {
+        box-shadow: 0 0 0 3px #3b82f6 !important;
+        font-weight: 700;
+    }
+    .code-editor {
+        font-family: 'JetBrains Mono', monospace;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 14px;
+        line-height: 1.5;
+        font-size: 0.95rem;
+        tab-size: 4;
+        resize: vertical;
+        min-height: 280px;
+    }
+    .code-editor:focus {
+        background-color: #1e1e1e;
+        color: #f3f4f6;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+    }
+    .output-console {
+        background-color: #0f172a;
+        color: #38bdf8;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.88rem;
+        border-radius: 8px;
+        padding: 14px;
+        min-height: 100px;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .option-card {
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+    }
+    .option-card:hover {
+        background-color: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+    .option-card.selected {
+        background-color: #eff6ff;
+        border-color: #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Exam Floating Header -->
+<div class="exam-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+        <h4 class="mb-1 fw-bold text-white"><i class="fa-solid fa-file-lines text-primary me-2"></i> {{ test.title }}</h4>
+        <span class="text-white-50 small">
+            Student: <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> 
+            ({{ attempt.student.roll_number }}) &bull; Total Marks: <strong>{{ test.calculated_total_marks }}</strong>
+        </span>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <div class="timer-badge" id="timerBox">
+            <i class="fa-regular fa-clock"></i>
+            <span id="timerDisplay">00:00:00</span>
+        </div>
+        <button type="button" class="btn btn-danger fw-semibold px-4" data-bs-toggle="modal" data-bs-target="#submitConfirmModal">
+            <i class="fa-solid fa-flag-checkered me-1"></i> Finish Test
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Active Question Workspace -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary fs-6 px-3 py-2" id="qBadgeNum">Question 1</span>
+                    <span class="badge bg-secondary-subtle text-secondary" id="qTypeBadge">MCQ</span>
+                    <span class="badge bg-info-subtle text-info-emphasis" id="qMarksBadge">5 Marks</span>
+                </div>
+                <div id="saveIndicator" class="small text-muted d-flex align-items-center gap-1">
+                    <i class="fa-solid fa-cloud-arrow-up text-success"></i> Auto-saved
+                </div>
+            </div>
+
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Question Prompt -->
+                    <div class="mb-4">
+                        <div class="fs-5 fw-semibold text-dark mb-2" id="qPromptText" style="white-space: pre-wrap;">Loading question...</div>
+                        <div id="qConstraintsBox" class="small text-muted mb-2 d-none">
+                            <strong>Constraints:</strong> <span id="qConstraintsText"></span>
+                        </div>
+                    </div>
+
+                    <!-- MCQ Interface -->
+                    <div id="mcqContainer" class="d-none">
+                        <div class="d-flex flex-column gap-3" id="mcqOptionsList">
+                            <!-- Dynamic MCQ Option Cards -->
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearSelectedOption()">
+                                <i class="fa-solid fa-eraser me-1"></i> Clear Selection
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Coding Question Interface -->
+                    <div id="codingContainer" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-semibold text-dark mb-0 small">
+                                <i class="fa-brands fa-python text-primary me-1"></i> Python Solution Sandbox
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetStarterCode()">
+                                <i class="fa-solid fa-arrow-rotate-left me-1"></i> Reset Code
+                            </button>
+                        </div>
+
+                        <textarea id="codeEditor" class="form-control code-editor w-100" rows="12" spellcheck="false" placeholder="# Type Python code here"></textarea>
+
+                        <!-- Sample Test Case Card -->
+                        <div class="card bg-light border-0 my-3 p-3" id="sampleTestCaseCard">
+                            <h6 class="fw-bold mb-2 small text-uppercase text-secondary">
+                                <i class="fa-solid fa-vial me-1"></i> Sample Test Case
+                            </h6>
+                            <div class="row g-2 font-monospace small">
+                                <div class="col-md-6">
+                                    <div class="p-2 bg-white rounded border">
+                                        <div class="text-muted small">Input:</div>
+                                        <div id="sampleInputDisplay" class="fw-semibold">None</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-2 bg-white rounded border">
+                                        <div class="text-muted small">Expected Output:</div>
+                                        <div id="sampleOutputDisplay" class="fw-semibold text-success">None</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Run Code Bar -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" id="btnRunCode" onclick="runSampleTestCases()">
+                                <i class="fa-solid fa-play me-1"></i> Run Sample Test Case
+                            </button>
+                            <span class="small text-muted font-monospace" id="runStatusText"></span>
+                        </div>
+
+                        <!-- Console Output -->
+                        <div class="output-console" id="codeConsole">
+                            <span class="text-muted">Click 'Run Sample Test Case' to execute in the secure sandbox...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prev / Next Navigation Bar -->
+                <div class="d-flex justify-content-between align-items-center pt-4 mt-4 border-top">
+                    <button type="button" class="btn btn-outline-secondary px-3" id="btnPrev" onclick="navigateQuestion(-1)">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Previous
+                    </button>
+                    <button type="button" class="btn btn-primary px-4" id="btnNext" onclick="navigateQuestion(1)">
+                        Next <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Question Navigator & Palette -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 80px;">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-grip me-2 text-primary"></i> Question Palette</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mb-4" id="paletteGrid">
+                    <!-- Palette items generated by JS -->
+                </div>
+
+                <!-- Palette Legend -->
+                <div class="border-top pt-3 small text-muted">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><span class="badge bg-success p-2 me-1 rounded-circle"></span> Answered:</span>
+                        <strong class="text-dark" id="statAnswered">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><span class="badge bg-secondary p-2 me-1 rounded-circle"></span> Unanswered:</span>
+                        <strong class="text-dark" id="statUnanswered">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span><span class="badge bg-primary p-2 me-1 rounded-circle"></span> Total Questions:</span>
+                        <strong class="text-dark" id="statTotal">0</strong>
+                    </div>
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="button" class="btn btn-danger py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#submitConfirmModal">
+                        <i class="fa-solid fa-circle-check me-1"></i> Submit Examination
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal fade" id="submitConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> Submit Assessment?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p>Are you sure you want to finish and submit your exam?</p>
+                <div class="card bg-light border-0 p-3 mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Questions Answered:</span>
+                        <strong class="text-success" id="modalAnsweredCount">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Questions Left Unanswered:</span>
+                        <strong class="text-danger" id="modalUnansweredCount">0</strong>
+                    </div>
+                </div>
+                <div class="alert alert-warning small mb-0">
+                    <i class="fa-solid fa-circle-info me-1"></i> Once submitted, your answers cannot be altered. MCQ answers and Python coding test cases will be evaluated instantly.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continue Exam</button>
+                <form method="post" action="{% url 'submit_test' attempt.id %}" id="finalSubmitForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold">Yes, Submit Now</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Global Exam State
+    const attemptId = {{ attempt.id }};
+    const csrfToken = "{{ csrf_token }}";
+    let questions = {{ questions_payload_json|safe }};
+    let currentIndex = 0;
+    let secondsRemaining = {{ seconds_remaining }};
+
+    // Tab key support in Code Editor
+    const codeEditorElem = document.getElementById('codeEditor');
+    codeEditorElem.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+
+    // Auto-save debouncer for coding input
+    let saveDebounceTimer;
+    codeEditorElem.addEventListener('input', function() {
+        const q = questions[currentIndex];
+        q.submitted_code = this.value;
+        q.answered = this.value.trim().length > 0;
+        updatePalette();
+
+        clearTimeout(saveDebounceTimer);
+        indicateSaving();
+        saveDebounceTimer = setTimeout(() => {
+            saveAnswerToBackend(q.id, null, q.submitted_code);
+        }, 800);
+    });
+
+    // Countdown Timer Engine
+    function startTimer() {
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerBox = document.getElementById('timerBox');
+
+        function tick() {
+            if (secondsRemaining <= 0) {
+                timerDisplay.textContent = "00:00:00";
+                document.getElementById('finalSubmitForm').submit();
+                return;
+            }
+
+            const hours = Math.floor(secondsRemaining / 3600);
+            const minutes = Math.floor((secondsRemaining % 3600) / 60);
+            const seconds = secondsRemaining % 60;
+
+            timerDisplay.textContent = 
+                String(hours).padStart(2, '0') + ":" +
+                String(minutes).padStart(2, '0') + ":" +
+                String(seconds).padStart(2, '0');
+
+            if (secondsRemaining < 300) { // < 5 mins warning
+                timerBox.classList.add('timer-warning');
+            }
+
+            secondsRemaining--;
+        }
+
+        tick();
+        setInterval(tick, 1000);
+    }
+
+    // Render active question into view
+    function renderQuestion(index) {
+        if (index < 0 || index >= questions.length) return;
+        currentIndex = index;
+        const q = questions[currentIndex];
+
+        // Badges & Headers
+        document.getElementById('qBadgeNum').textContent = `Question ${q.number} of ${questions.length}`;
+        document.getElementById('qTypeBadge').textContent = q.type === 'MCQ' ? 'Multiple Choice' : 'Python Coding';
+        document.getElementById('qMarksBadge').textContent = `${q.marks} Marks`;
+        document.getElementById('qPromptText').textContent = q.text;
+
+        // Constraints
+        const constrBox = document.getElementById('qConstraintsBox');
+        if (q.problem_constraints) {
+            document.getElementById('qConstraintsText').textContent = q.problem_constraints;
+            constrBox.classList.remove('d-none');
+        } else {
+            constrBox.classList.add('d-none');
+        }
+
+        // Toggle MCQ vs Coding containers
+        const mcqCont = document.getElementById('mcqContainer');
+        const codeCont = document.getElementById('codingContainer');
+
+        if (q.type === 'MCQ') {
+            mcqCont.classList.remove('d-none');
+            codeCont.classList.add('d-none');
+
+            // Render options
+            const optList = document.getElementById('mcqOptionsList');
+            optList.innerHTML = '';
+            const labels = ['A', 'B', 'C', 'D'];
+
+            q.options.forEach((opt, idx) => {
+                const isSelected = (q.selected_option === opt.id);
+                const optCard = document.createElement('div');
+                optCard.className = `option-card d-flex align-items-center gap-3 ${isSelected ? 'selected' : ''}`;
+                optCard.onclick = () => selectMCQOption(opt.id);
+
+                optCard.innerHTML = `
+                    <div class="badge ${isSelected ? 'bg-primary' : 'bg-light text-dark border'} rounded-circle p-2" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                        ${labels[idx] || (idx + 1)}
+                    </div>
+                    <div class="flex-grow-1 fs-6">${opt.text}</div>
+                    <input type="radio" name="mcq_radio" value="${opt.id}" ${isSelected ? 'checked' : ''} class="form-check-input" style="pointer-events: none;">
+                `;
+                optList.appendChild(optCard);
+            });
+        } else {
+            mcqCont.classList.add('d-none');
+            codeCont.classList.remove('d-none');
+
+            // Set editor content
+            codeEditorElem.value = q.submitted_code || q.starter_code;
+
+            // Sample test case
+            const sampleCard = document.getElementById('sampleTestCaseCard');
+            if (q.sample_test_case) {
+                sampleCard.classList.remove('d-none');
+                document.getElementById('sampleInputDisplay').textContent = q.sample_test_case.input || '(None)';
+                document.getElementById('sampleOutputDisplay').textContent = q.sample_test_case.output || '(None)';
+            } else {
+                sampleCard.classList.add('d-none');
+            }
+
+            document.getElementById('codeConsole').innerHTML = `<span class="text-muted">Click 'Run Sample Test Case' to execute in the secure sandbox...</span>`;
+            document.getElementById('runStatusText').textContent = '';
+        }
+
+        // Navigation button states
+        document.getElementById('btnPrev').disabled = (currentIndex === 0);
+        const nextBtn = document.getElementById('btnNext');
+        if (currentIndex === questions.length - 1) {
+            nextBtn.innerHTML = `Finish <i class="fa-solid fa-flag-checkered ms-1"></i>`;
+            nextBtn.className = "btn btn-danger px-4";
+            nextBtn.onclick = () => {
+                const modal = new bootstrap.Modal(document.getElementById('submitConfirmModal'));
+                modal.show();
+            };
+        } else {
+            nextBtn.innerHTML = `Next <i class="fa-solid fa-arrow-right ms-1"></i>`;
+            nextBtn.className = "btn btn-primary px-4";
+            nextBtn.onclick = () => navigateQuestion(1);
+        }
+
+        updatePalette();
+    }
+
+    // Select MCQ Option
+    function selectMCQOption(optionId) {
+        const q = questions[currentIndex];
+        q.selected_option = optionId;
+        q.answered = true;
+        renderQuestion(currentIndex);
+        indicateSaving();
+        saveAnswerToBackend(q.id, optionId, null);
+    }
+
+    // Clear Selection
+    function clearSelectedOption() {
+        const q = questions[currentIndex];
+        q.selected_option = null;
+        q.answered = false;
+        renderQuestion(currentIndex);
+        indicateSaving();
+        saveAnswerToBackend(q.id, null, null);
+    }
+
+    // Reset Starter Code
+    function resetStarterCode() {
+        if (confirm("Reset code back to original starter template?")) {
+            const q = questions[currentIndex];
+            q.submitted_code = q.starter_code;
+            codeEditorElem.value = q.starter_code;
+            q.answered = false;
+            updatePalette();
+            indicateSaving();
+            saveAnswerToBackend(q.id, null, q.starter_code);
+        }
+    }
+
+    // Question Navigation
+    function navigateQuestion(offset) {
+        const newIndex = currentIndex + offset;
+        if (newIndex >= 0 && newIndex < questions.length) {
+            renderQuestion(newIndex);
+        }
+    }
+
+    // Palette Builder
+    function updatePalette() {
+        const grid = document.getElementById('paletteGrid');
+        grid.innerHTML = '';
+
+        let answeredCount = 0;
+
+        questions.forEach((q, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = q.number;
+            btn.className = `btn question-btn ${q.answered ? 'btn-success' : 'btn-outline-secondary'} ${idx === currentIndex ? 'current' : ''}`;
+            btn.onclick = () => renderQuestion(idx);
+
+            grid.appendChild(btn);
+            if (q.answered) answeredCount++;
+        });
+
+        const total = questions.length;
+        const unanswered = total - answeredCount;
+
+        document.getElementById('statAnswered').textContent = answeredCount;
+        document.getElementById('statUnanswered').textContent = unanswered;
+        document.getElementById('statTotal').textContent = total;
+
+        document.getElementById('modalAnsweredCount').textContent = answeredCount;
+        document.getElementById('modalUnansweredCount').textContent = unanswered;
+    }
+
+    // Save indicator visual feedback
+    function indicateSaving() {
+        const ind = document.getElementById('saveIndicator');
+        ind.innerHTML = `<i class="fa-solid fa-arrows-rotate fa-spin text-primary"></i> Saving...`;
+    }
+
+    function indicateSaved() {
+        const ind = document.getElementById('saveIndicator');
+        ind.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-success"></i> Auto-saved`;
+    }
+
+    // AJAX Save Answer
+    async function saveAnswerToBackend(questionId, selectedOptionId, codeText) {
+        try {
+            await fetch("{% url 'api_save_answer' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    attempt_id: attemptId,
+                    question_id: questionId,
+                    selected_option_id: selectedOptionId,
+                    code_text: codeText
+                })
+            });
+            indicateSaved();
+        } catch (err) {
+            console.error("Save failed:", err);
+            const ind = document.getElementById('saveIndicator');
+            ind.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-danger"></i> Save failed`;
+        }
+    }
+
+    // AJAX Run Sample Test Case (Sandbox Runner)
+    async function runSampleTestCases() {
+        const q = questions[currentIndex];
+        const code = codeEditorElem.value;
+        const runBtn = document.getElementById('btnRunCode');
+        const consoleBox = document.getElementById('codeConsole');
+        const statusText = document.getElementById('runStatusText');
+
+        runBtn.disabled = true;
+        runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Running Sandbox...`;
+        statusText.textContent = "Executing in isolated sandbox...";
+
+        try {
+            const resp = await fetch("{% url 'api_run_code' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    question_id: q.id,
+                    code: code
+                })
+            });
+            const data = await resp.json();
+
+            if (data.results && data.results.length > 0) {
+                let html = '';
+                let allPassed = true;
+
+                data.results.forEach((res, i) => {
+                    if (res.passed) {
+                        html += `<div class="text-success mb-2"><strong>[PASS] Sample Test #${i+1}</strong></div>`;
+                        html += `<div class="text-white-50">Output: <span class="text-light">${res.actual_output || '(Empty)'}</span></div>`;
+                    } else {
+                        allPassed = false;
+                        html += `<div class="text-danger mb-2"><strong>[FAIL] Sample Test #${i+1} &mdash; ${res.status}</strong></div>`;
+                        if (res.error_message) {
+                            html += `<div class="text-warning mb-1">Error: ${res.error_message}</div>`;
+                        }
+                        html += `<div class="text-white-50">Your Output: <span class="text-danger">${res.actual_output || '(None)'}</span></div>`;
+                        html += `<div class="text-white-50">Expected: <span class="text-success">${res.expected_output || '(None)'}</span></div>`;
+                    }
+                    html += `<hr class="border-secondary my-2">`;
+                });
+
+                consoleBox.innerHTML = html;
+                statusText.textContent = allPassed ? "All sample tests passed!" : "Sample tests failed";
+                statusText.className = allPassed ? "small text-success font-monospace" : "small text-danger font-monospace";
+            } else {
+                consoleBox.innerHTML = `<div class="text-danger">Failed to evaluate test cases.</div>`;
+            }
+        } catch (err) {
+            consoleBox.innerHTML = `<div class="text-danger">Execution Error: ${err.message}</div>`;
+        } finally {
+            runBtn.disabled = false;
+            runBtn.innerHTML = `<i class="fa-solid fa-play me-1"></i> Run Sample Test Case`;
+        }
+    }
+
+    // Initialize Exam
+    document.addEventListener("DOMContentLoaded", () => {
+        startTimer();
+        renderQuestion(0);
+    });
+</script>
+{% endblock %}

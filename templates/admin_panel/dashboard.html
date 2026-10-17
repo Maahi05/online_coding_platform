@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Instructor Admin Dashboard - PyAssessPro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-gauge-high text-primary me-2"></i> Instructor Management Console</h2>
+        <p class="text-muted mb-0">Overview of tests, student submissions, and question management</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'admin_test_create' %}" class="btn btn-primary fw-semibold">
+            <i class="fa-solid fa-plus me-1"></i> Create New Test
+        </a>
+        <a href="{% url 'admin_student_results' %}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-file-export me-1"></i> Results & CSV
+        </a>
+    </div>
+</div>
+
+<!-- Admin Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card p-3 border-start border-primary border-4 shadow-sm">
+            <span class="text-muted small fw-semibold text-uppercase">Total Tests</span>
+            <h3 class="fw-bold text-dark mt-1 mb-0">{{ total_tests }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 border-start border-success border-4 shadow-sm">
+            <span class="text-muted small fw-semibold text-uppercase">Registered Students</span>
+            <h3 class="fw-bold text-success mt-1 mb-0">{{ total_students }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 border-start border-warning border-4 shadow-sm">
+            <span class="text-muted small fw-semibold text-uppercase">Total Submissions</span>
+            <h3 class="fw-bold text-dark mt-1 mb-0">{{ total_attempts }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card p-3 border-start border-info border-4 shadow-sm">
+            <span class="text-muted small fw-semibold text-uppercase">Average Score</span>
+            <h3 class="fw-bold text-primary mt-1 mb-0">{{ avg_score }}%</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tests & Submissions -->
+<div class="row g-4 mb-4">
+    <!-- Active Tests List -->
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-file-pen text-primary me-2"></i> Managed Assessments</h6>
+                <a href="{% url 'admin_tests_list' %}" class="small text-decoration-none">View All &rarr;</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Title</th>
+                                <th>Questions</th>
+                                <th>Status</th>
+                                <th class="text-end">Manage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in recent_tests %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ t.title }}</div>
+                                        <small class="text-muted">{{ t.duration_minutes }}m &bull; {{ t.calculated_total_marks }} marks</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ t.questions.count }} Qs</span>
+                                    </td>
+                                    <td>
+                                        {% if t.is_active %}
+                                            <span class="badge bg-success-subtle text-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary">Draft</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'admin_manage_questions' t.id %}" class="btn btn-outline-primary btn-sm" title="Questions">
+                                            <i class="fa-solid fa-list-check"></i>
+                                        </a>
+                                        <a href="{% url 'admin_test_edit' t.id %}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No tests created yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Submissions -->
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-check text-success me-2"></i> Recent Student Submissions</h6>
+                <a href="{% url 'admin_student_results' %}" class="small text-decoration-none">Full Results &rarr;</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Student</th>
+                                <th>Test</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in recent_attempts %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ a.student.user.get_full_name|default:a.student.user.username }}</div>
+                                        <small class="text-muted font-monospace">{{ a.student.roll_number }}</small>
+                                    </td>
+                                    <td class="small">{{ a.test.title|truncatechars:20 }}</td>
+                                    <td>
+                                        <span class="fw-bold">{{ a.score }}</span>/{{ a.total_marks }}
+                                        <small class="text-muted font-monospace">({{ a.percentage }}%)</small>
+                                    </td>
+                                    <td>
+                                        {% if a.is_passed %}
+                                            <span class="badge bg-success-subtle text-success">Pass</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger">Fail</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No recent student submissions.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

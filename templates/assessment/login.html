@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Login - PyAssessPro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-5">
+        <div class="card shadow border-0">
+            <div class="card-header bg-dark text-white text-center py-4">
+                <i class="fa-solid fa-graduation-cap fs-1 text-primary mb-2"></i>
+                <h4 class="mb-0 fw-bold">Student Portal Login</h4>
+                <p class="text-white-50 small mb-0">Sign in to take exams and track your progress</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" action="{% url 'student_login' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                            <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg fw-semibold">
+                            <i class="fa-solid fa-right-to-bracket me-2"></i> Sign In
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <span class="text-muted">Don't have an account?</span>
+                        <a href="{% url 'student_register' %}" class="fw-semibold text-decoration-none">Register here</a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-2 small">
+                <a href="{% url 'admin_login' %}" class="text-secondary text-decoration-none">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Instructor / Admin Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

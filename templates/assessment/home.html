@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Online Coding Test Platform - Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row align-items-center py-4 mb-4">
+    <div class="col-lg-7">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold mb-3">
+            <i class="fa-brands fa-python me-1"></i> Dasara Special Task 2026
+        </span>
+        <h1 class="display-4 fw-bold text-dark lh-tight mb-3">
+            Master Python with <br><span class="text-primary">Real-Time Coding Assessments</span>
+        </h1>
+        <p class="lead text-muted mb-4">
+            An advanced evaluation platform featuring timed Multiple Choice Questions (MCQs), interactive Python coding challenges with instant test-case feedback, and live competitive leaderboards.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+            {% if user.is_authenticated %}
+                <a href="{% url 'student_dashboard' %}" class="btn btn-primary btn-lg px-4 shadow-sm">
+                    <i class="fa-solid fa-play me-2"></i> Go to My Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'student_register' %}" class="btn btn-primary btn-lg px-4 shadow-sm">
+                    <i class="fa-solid fa-user-plus me-2"></i> Register as Student
+                </a>
+                <a href="{% url 'student_login' %}" class="btn btn-outline-dark btn-lg px-4">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Student Login
+                </a>
+            {% endif %}
+            <a href="{% url 'leaderboard' %}" class="btn btn-outline-secondary btn-lg px-4">
+                <i class="fa-solid fa-trophy text-warning me-2"></i> View Leaderboard
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="card border-0 shadow-lg bg-dark text-white p-4" style="border-radius: 16px;">
+            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary pb-2">
+                <div class="d-flex gap-2">
+                    <span class="rounded-circle bg-danger" style="width: 12px; height: 12px;"></span>
+                    <span class="rounded-circle bg-warning" style="width: 12px; height: 12px;"></span>
+                    <span class="rounded-circle bg-success" style="width: 12px; height: 12px;"></span>
+                </div>
+                <small class="text-secondary font-monospace">python_test_runner.py</small>
+            </div>
+            <pre class="font-monospace text-info mb-0 small" style="line-height: 1.6;">
+<code><span class="text-secondary"># Python Coding Challenge Sandbox</span>
+<span class="text-warning">def</span> <span class="text-light">two_sum</span>(nums, target):
+    seen = {}
+    <span class="text-warning">for</span> i, val <span class="text-warning">in</span> <span class="text-info">enumerate</span>(nums):
+        diff = target - val
+        <span class="text-warning">if</span> diff <span class="text-warning">in</span> seen:
+            <span class="text-warning">return</span> [seen[diff], i]
+        seen[val] = i
+    <span class="text-warning">return</span> []
+
+<span class="text-success">&gt;&gt;&gt; Running isolated test cases...</span>
+<span class="text-success">[PASS] Sample 1: Target 9 -&gt; [0, 1]</span>
+<span class="text-success">[PASS] Hidden Test 1: (Verified)</span>
+<span class="text-light">Score: 10/10 Marks (100%)</span></code></pre>
+        </div>
+    </div>
+</div>
+
+<!-- Key Features Grid -->
+<div class="row g-4 my-4">
+    <div class="col-md-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <div class="rounded-3 bg-primary-subtle text-primary d-inline-flex p-3 mb-3 fs-4">
+                    <i class="fa-solid fa-stopwatch"></i>
+                </div>
+                <h5 class="card-title fw-bold">Timed MCQ Exams</h5>
+                <p class="card-text text-muted">
+                    Automated countdown timer with auto-submit protection, negative marking options, and instant scoring calculation.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <div class="rounded-3 bg-success-subtle text-success d-inline-flex p-3 mb-3 fs-4">
+                    <i class="fa-solid fa-terminal"></i>
+                </div>
+                <h5 class="card-title fw-bold">Isolated Python Sandbox</h5>
+                <p class="card-text text-muted">
+                    Safe code execution engine with AST static analysis, timeouts, and automated evaluation against sample and hidden test cases.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-3">
+            <div class="card-body">
+                <div class="rounded-3 bg-warning-subtle text-warning-emphasis d-inline-flex p-3 mb-3 fs-4">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <h5 class="card-title fw-bold">Leaderboard & Certificates</h5>
+                <p class="card-text text-muted">
+                    Top 10 performer rankings with consistent tie-breaking algorithms and downloadable verified PDF certificates.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Tests Section -->
+<div class="my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Available Assessments</h3>
+            <p class="text-muted mb-0">Browse and participate in active examinations</p>
+        </div>
+        <a href="{% url 'leaderboard' %}" class="btn btn-outline-primary btn-sm">View Top Performers &rarr;</a>
+    </div>
+
+    {% if recent_tests %}
+        <div class="row g-4">
+            {% for test in recent_tests %}
+                <div class="col-md-6">
+                    <div class="card h-100 hover-shadow">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title fw-bold text-primary mb-0">{{ test.title }}</h5>
+                                    <span class="badge bg-secondary-subtle text-secondary font-monospace">{{ test.duration_minutes }} mins</span>
+                                </div>
+                                <p class="card-text text-muted small mb-3">
+                                    {{ test.description|default:"Comprehensive Python programming and problem-solving assessment."|truncatewords:20 }}
+                                </p>
+                                <div class="d-flex flex-wrap gap-2 mb-3 small">
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fa-solid fa-list-check me-1 text-primary"></i> {{ test.mcq_count }} MCQs
+                                    </span>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fa-solid fa-code me-1 text-success"></i> {{ test.coding_count }} Coding Questions
+                                    </span>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fa-solid fa-star me-1 text-warning"></i> {{ test.total_marks }} Total Marks
+                                    </span>
+                                    {% if test.has_negative_marking %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                            <i class="fa-solid fa-minus-circle me-1"></i> Negative Marking ({{ test.negative_marks_per_question }})
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                                <span class="text-muted small">Passing Marks: <strong>{{ test.pass_marks }}</strong></span>
+                                {% if user.is_authenticated %}
+                                    {% if user.is_staff %}
+                                        <a href="{% url 'admin_manage_questions' test.id %}" class="btn btn-outline-primary btn-sm">Manage Questions</a>
+                                    {% else %}
+                                        <a href="{% url 'start_test' test.id %}" class="btn btn-primary btn-sm px-3">
+                                            <i class="fa-solid fa-play me-1"></i> Start Exam
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'student_login' %}" class="btn btn-outline-primary btn-sm px-3">Login to Attempt</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card p-5 text-center text-muted">
+            <i class="fa-solid fa-folder-open fs-1 mb-3 text-secondary"></i>
+            <h5>No tests are currently published.</h5>
+            <p>Admin can log in and create assessments from the management dashboard.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

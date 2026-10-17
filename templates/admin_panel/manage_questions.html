@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Questions: {{ test.title }} - Admin Console{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1 small">
+                <li class="breadcrumb-item"><a href="{% url 'admin_tests_list' %}">Tests</a></li>
+                <li class="breadcrumb-item active">{{ test.title }}</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-1">{{ test.title }}</h2>
+        <span class="text-muted small">
+            Duration: <strong>{{ test.duration_minutes }}m</strong> &bull; Total Marks: <strong>{{ test.calculated_total_marks }}</strong> &bull; Questions: <strong>{{ questions.count }}</strong>
+        </span>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'admin_question_create_mcq' test.id %}" class="btn btn-outline-primary fw-semibold">
+            <i class="fa-solid fa-list-check me-1"></i> Add MCQ
+        </a>
+        <a href="{% url 'admin_question_create_coding' test.id %}" class="btn btn-success fw-semibold">
+            <i class="fa-solid fa-code me-1"></i> Add Coding Question
+        </a>
+        <a href="{% url 'admin_tests_list' %}" class="btn btn-outline-secondary">
+            Back to Tests
+        </a>
+    </div>
+</div>
+
+{% if questions %}
+    <div class="d-flex flex-column gap-3 mb-4">
+        {% for q in questions %}
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-dark">#{{ q.order }}</span>
+                        <span class="badge {% if q.question_type == 'MCQ' %}bg-primary-subtle text-primary{% else %}bg-success-subtle text-success{% endif %}">
+                            {{ q.get_question_type_display }}
+                        </span>
+                        <span class="badge bg-secondary-subtle text-secondary">{{ q.marks }} Marks</span>
+                    </div>
+                    <form method="post" action="{% url 'admin_question_delete' q.id %}" onsubmit="return confirm('Delete this question?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="fa-solid fa-trash me-1"></i> Delete
+                        </button>
+                    </form>
+                </div>
+                <div class="card-body p-4">
+                    <p class="fs-6 fw-semibold text-dark mb-3" style="white-space: pre-wrap;">{{ q.question_text }}</p>
+
+                    {% if q.question_type == 'MCQ' %}
+                        <div class="row g-2 mb-2">
+                            {% for opt in q.options.all %}
+                                <div class="col-md-6">
+                                    <div class="p-2 px-3 rounded border {% if opt.is_correct %}bg-success-subtle border-success text-success fw-semibold{% else %}bg-light text-muted{% endif %} d-flex justify-content-between align-items-center small">
+                                        <span>{{ opt.option_text }}</span>
+                                        {% if opt.is_correct %}
+                                            <span class="badge bg-success"><i class="fa-solid fa-check"></i> Correct</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elif q.question_type == 'CODING' %}
+                        {% if q.problem_constraints %}
+                            <div class="small text-muted mb-2">
+                                <strong>Constraints:</strong> {{ q.problem_constraints }}
+                            </div>
+                        {% endif %}
+
+                        <div class="card bg-light border-0 p-3 mb-2 font-monospace small">
+                            <h6 class="fw-bold mb-2 small text-uppercase font-sans"><i class="fa-solid fa-vial me-1"></i> Configured Test Cases ({{ q.test_cases.count }})</h6>
+                            <div class="row g-2">
+                                {% for tc in q.test_cases.all %}
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-white rounded border">
+                                            <span class="badge {% if tc.is_sample %}bg-primary{% else %}bg-secondary{% endif %} mb-1">
+                                                {% if tc.is_sample %}Sample Test Case{% else %}Hidden Test Case{% endif %}
+                                            </span>
+                                            <div><span class="text-muted">Input:</span> {{ tc.input_data|default:"(None)" }}</div>
+                                            <div><span class="text-muted">Output:</span> <strong class="text-success">{{ tc.expected_output }}</strong></div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if q.explanation %}
+                        <div class="small text-muted border-top pt-2 mt-2">
+                            <strong>Explanation:</strong> {{ q.explanation }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card p-5 text-center text-muted border-0 shadow-sm">
+        <i class="fa-solid fa-file-circle-question fs-1 mb-3 text-secondary"></i>
+        <h5>No questions added to this test yet.</h5>
+        <p>Click "Add MCQ" or "Add Coding Question" above to start populating this examination.</p>
+    </div>
+{% endif %}
+{% endblock %}

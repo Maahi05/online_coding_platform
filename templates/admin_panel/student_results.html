@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Assessment Results & Analytics - Admin Console{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-chart-line text-primary me-2"></i> Student Results & Analytics</h2>
+        <p class="text-muted mb-0">Track student test scores, pass rates, and export assessment records</p>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="get" class="d-flex gap-2">
+            <select name="test_id" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">-- All Assessments --</option>
+                {% for t in tests %}
+                    <option value="{{ t.id }}" {% if selected_test_id == t.id %}selected{% endif %}>{{ t.title }}</option>
+                {% endfor %}
+            </select>
+            {% if selected_test_id %}
+                <a href="{% url 'admin_student_results' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center">Clear</a>
+            {% endif %}
+        </form>
+
+        <a href="{% url 'admin_student_results' %}?export=csv{% if selected_test_id %}&test_id={{ selected_test_id }}{% endif %}" class="btn btn-success fw-semibold">
+            <i class="fa-solid fa-file-csv me-1"></i> Export to CSV
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Roll Number</th>
+                        <th>College / Branch</th>
+                        <th>Assessment</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Outcome</th>
+                        <th>Time Spent</th>
+                        <th>Completed At</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in attempts %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ a.student.user.get_full_name|default:a.student.user.username }}</div>
+                                <small class="text-muted">{{ a.student.user.email }}</small>
+                            </td>
+                            <td><span class="font-monospace fw-semibold">{{ a.student.roll_number }}</span></td>
+                            <td>
+                                <div>{{ a.student.college|default:"&mdash;" }}</div>
+                                <small class="text-muted">{{ a.student.branch }}</small>
+                            </td>
+                            <td class="fw-semibold small">{{ a.test.title }}</td>
+                            <td>
+                                <strong>{{ a.score }}</strong> / {{ a.total_marks }}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace">{{ a.percentage }}%</span>
+                            </td>
+                            <td>
+                                {% if a.is_passed %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">PASSED</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">FAILED</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="font-monospace small">{{ a.formatted_time_taken }}</span></td>
+                            <td class="small text-muted">{{ a.completed_at|date:"M d, Y H:i" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'test_result' a.id %}" class="btn btn-outline-primary btn-sm" title="View Full Submission Review">
+                                    <i class="fa-solid fa-eye me-1"></i> Review
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-clipboard-question fs-1 mb-3 text-secondary"></i>
+                                <h5>No submission records match your filter.</h5>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

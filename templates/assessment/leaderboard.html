@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Leaderboard - Top Performers{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4">
+    <div class="col-md-7">
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-trophy text-warning me-2"></i> Hall of Fame & Leaderboard</h2>
+        <p class="text-muted mb-0">Recognizing top Python coding test performers and high scorers</p>
+    </div>
+    <div class="col-md-5 mt-3 mt-md-0">
+        <form method="get" class="d-flex gap-2 justify-content-md-end">
+            <select name="test_id" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">-- All Assessments --</option>
+                {% for t in tests %}
+                    <option value="{{ t.id }}" {% if selected_test_id == t.id %}selected{% endif %}>{{ t.title }}</option>
+                {% endfor %}
+            </select>
+            {% if selected_test_id %}
+                <a href="{% url 'leaderboard' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Tie-breaker Alert Info -->
+<div class="alert alert-info py-2 small d-flex align-items-center gap-2 mb-4">
+    <i class="fa-solid fa-circle-info text-primary"></i>
+    <span><strong>Tie-Breaking Policy:</strong> Candidates with equal marks are ranked by completion speed (least time taken), followed by earlier completion date.</span>
+</div>
+
+<!-- Top 10 Table -->
+<div class="card shadow-sm border-0 mb-4 overflow-hidden">
+    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-medal text-warning me-2"></i> Top 10 Ranked Performers</h5>
+        <span class="badge bg-primary">Live Leaderboard</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th class="text-center" style="width: 80px;">Rank</th>
+                        <th>Student Name</th>
+                        <th>Roll Number</th>
+                        <th>College / Branch</th>
+                        <th>Assessment</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Time Spent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ranked_list %}
+                        <tr class="{% if item.is_current_user %}table-primary fw-semibold{% endif %}">
+                            <td class="text-center">
+                                {% if item.rank == 1 %}
+                                    <span class="badge badge-rank-1 rounded-circle p-2 fs-6" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </span>
+                                {% elif item.rank == 2 %}
+                                    <span class="badge badge-rank-2 rounded-circle p-2 fs-6" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                                        2
+                                    </span>
+                                {% elif item.rank == 3 %}
+                                    <span class="badge badge-rank-3 rounded-circle p-2 fs-6" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                                        3
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border fs-6 font-monospace">{{ item.rank }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">
+                                    {{ item.attempt.student.user.get_full_name|default:item.attempt.student.user.username }}
+                                    {% if item.is_current_user %}<span class="badge bg-primary ms-1 small">You</span>{% endif %}
+                                </div>
+                                <small class="text-muted">{{ item.attempt.student.user.email }}</small>
+                            </td>
+                            <td><span class="font-monospace fw-semibold">{{ item.attempt.student.roll_number }}</span></td>
+                            <td>
+                                <div>{{ item.attempt.student.college|default:"&mdash;" }}</div>
+                                <small class="text-muted">{{ item.attempt.student.branch }}</small>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold">{{ item.attempt.test.title }}</div>
+                                <small class="text-muted">{{ item.attempt.completed_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark">{{ item.attempt.score }}</span>
+                                <small class="text-muted">/ {{ item.attempt.total_marks }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace fs-6">
+                                    {{ item.attempt.percentage }}%
+                                </span>
+                            </td>
+                            <td>
+                                <span class="font-monospace text-muted small"><i class="fa-regular fa-clock me-1"></i>{{ item.attempt.formatted_time_taken }}</span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-trophy fs-1 mb-3 text-secondary"></i>
+                                <h5>No examination submissions recorded yet.</h5>
+                                <p>Be the first student to complete an assessment and rank #1!</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

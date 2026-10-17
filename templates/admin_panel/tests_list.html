@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Tests - Instructor Console{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="fa-solid fa-list-check text-primary me-2"></i> Assessments Management</h2>
+        <p class="text-muted mb-0">Create, edit, configure question pools, and manage test availability</p>
+    </div>
+    <a href="{% url 'admin_test_create' %}" class="btn btn-primary fw-semibold">
+        <i class="fa-solid fa-plus me-1"></i> Add New Assessment
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th>Title & Description</th>
+                        <th>Duration</th>
+                        <th>Total Marks</th>
+                        <th>Passing Marks</th>
+                        <th>MCQs</th>
+                        <th>Coding Qs</th>
+                        <th>Negative Marking</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tests %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ t.title }}</div>
+                                <small class="text-muted">{{ t.description|truncatewords:15 }}</small>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ t.duration_minutes }} mins</span></td>
+                            <td><strong class="text-primary">{{ t.calculated_total_marks }}</strong></td>
+                            <td>{{ t.pass_marks }}</td>
+                            <td><span class="badge bg-info-subtle text-info-emphasis">{{ t.mcq_count }}</span></td>
+                            <td><span class="badge bg-success-subtle text-success">{{ t.coding_count }}</span></td>
+                            <td>
+                                {% if t.has_negative_marking %}
+                                    <span class="badge bg-danger-subtle text-danger">-{{ t.negative_marks_per_question }}</span>
+                                {% else %}
+                                    <span class="text-muted small">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if t.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'admin_manage_questions' t.id %}" class="btn btn-primary" title="Manage Questions">
+                                        <i class="fa-solid fa-layer-group me-1"></i> Questions ({{ t.question_count }})
+                                    </a>
+                                    <a href="{% url 'admin_test_edit' t.id %}" class="btn btn-outline-secondary" title="Edit Settings">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <a href="{% url 'admin_test_delete' t.id %}" class="btn btn-outline-danger" title="Delete">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-folder-open fs-1 mb-3 text-secondary"></i>
+                                <h5>No tests have been created yet.</h5>
+                                <p>Click "Add New Assessment" to build your first Python test.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

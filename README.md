@@ -157,25 +157,3 @@ Run the automated test suite verifying sandbox security, timeouts, negative mark
 ```powershell
 python manage.py test
 ```
-
----
-
-## 📢 LinkedIn Post Template
-
-```markdown
-🚀 Excited to share my latest full-stack project built for the Dasara Special Task 2026 with 10000 Coders!
-
-Introducing **PyAssessPro - An Online Coding Test Platform** built with Python, Django, MySQL, HTML5, Bootstrap 5, and JavaScript! 💻✨
-
-Key Features implemented:
-🔹 Admin Module: Complete test creation suite for Python MCQs and Coding Challenges with test-case configuration.
-🔹 Secure Code Sandbox: AST-guarded, isolated Python execution engine with timeouts and safety constraints (no server execution vulnerability!).
-🔹 Timed Exam Engine: Live auto-submit countdown timer, background autosave, question navigator, and code editor.
-🔹 Real-time Leaderboard: Consistent tie-breaking algorithms highlighting top performers.
-🔹 Verifiable PDF Certificates: Automated digital credentials for top scorers.
-🔹 Visual Analytics: Interactive Chart.js score dashboards and CSV export.
-
-A big thank you to the mentors and community at @10000 Coders for the guidance and inspiring challenge!
-
-#Python #Django #WebDevelopment #FullStack #Bootstrap #EdTech #CodingAssessment #10000Coders #DasaraTask2026
-```

@@ -1,7 +1,6 @@
 # 🚀 PyAssessPro - Online Coding Test Platform
-### Dasara Special Task 2026 | 10000 Coders
 
-An enterprise-grade, responsive online assessment platform built with **Python, Django, MySQL / SQLite, HTML5, CSS3, Bootstrap 5, and JavaScript**. PyAssessPro empowers instructors to create timed multiple-choice (MCQ) and algorithmic Python coding challenges with isolated test-case sandboxing, instant grading, interactive analytics, consistent tie-breaking leaderboards, and verified digital PDF certificate generation.
+An enterprise-grade, responsive online assessment platform built with **Python, Django, MySQL / SQLite, HTML5, CSS3, Bootstrap 5, and JavaScript**. PyAssessPro empowers instructors to create timed multiple-choice (MCQ) and algorithmic Python coding challenges with isolated test-case sandboxing, LeetCode-style parameter injection, anti-cheating tab-switch proctoring, instant grading, interactive analytics, consistent tie-breaking leaderboards, and verified digital PDF certificate generation.
 
 ---
 

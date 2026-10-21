@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: online-coding-platform
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn coding_platform.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: DEBUG
+        value: "True"
